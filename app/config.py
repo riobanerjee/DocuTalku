@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 load_dotenv()
 
 class Settings(BaseSettings):
-    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+    # ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"

@@ -5,6 +5,7 @@ from document_processor import DocumentProcessor
 from vector_store import VectorStore
 from qa_engine import QAEngine
 import time
+import json
 
 # Page config
 st.set_page_config(
@@ -18,20 +19,29 @@ if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'current_document' not in st.session_state:
     st.session_state.current_document = None
+if 'anthropic_api_key' not in st.session_state:
+    st.session_state.anthropic_api_key = None
 
 # Initialize components
 @st.cache_resource
-def init_components():
-    settings = get_settings()
+def init_components(api_key):
     doc_processor = DocumentProcessor()
     vector_store = VectorStore()
-    qa_engine = QAEngine(settings.ANTHROPIC_API_KEY)
+    qa_engine = QAEngine(api_key)
     return doc_processor, vector_store, qa_engine
-
-doc_processor, vector_store, qa_engine = init_components()
 
 # App title
 st.title("📚 Document Q&A System")
+
+# API Key Input
+st.markdown("### API Key Configuration")
+api_key = st.text_input("Enter your Anthropic API Key:", type="password", key="api_key_input")
+if api_key:
+    st.session_state.anthropic_api_key = api_key
+    doc_processor, vector_store, qa_engine = init_components(api_key)
+else:
+    st.warning("Please enter your Anthropic API Key to proceed.")
+    st.stop()
 
 # Create two columns
 col1, col2 = st.columns([2, 1])

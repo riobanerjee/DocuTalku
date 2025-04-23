@@ -1,8 +1,10 @@
+# app/main.py
 import streamlit as st
-from app.config import get_settings
-from app.document_processor import DocumentProcessor
-from app.vector_store import VectorStore
-from app.qa_engine import QAEngine
+from config import get_settings
+from document_processor import DocumentProcessor
+from vector_store import VectorStore
+from qa_engine import QAEngine
+import time
 
 # Page config
 st.set_page_config(
@@ -10,6 +12,12 @@ st.set_page_config(
     page_icon="📚",
     layout="wide"
 )
+
+# Initialize session state
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'current_document' not in st.session_state:
+    st.session_state.current_document = None
 
 # Initialize components
 @st.cache_resource
@@ -24,50 +32,89 @@ doc_processor, vector_store, qa_engine = init_components()
 
 # App title
 st.title("📚 Document Q&A System")
-st.markdown("Upload a PDF document and ask questions about its content.")
 
-# Sidebar
-with st.sidebar:
-    st.header("About")
-    st.markdown("""
-    This application allows you to:
-    - Upload PDF documents
-    - Ask questions about the content
-    - Get AI-powered answers with context
-    """)
+# Create two columns
+col1, col2 = st.columns([2, 1])
 
-# Main content
-uploaded_file = st.file_uploader("Upload a PDF file", type=['pdf'])
-
-if uploaded_file:
-    with st.spinner("Processing document..."):
-        # Process the document
-        text_chunks = doc_processor.process_pdf(uploaded_file)
-        
-        # Store in vector database
-        vector_store.add_documents(text_chunks)
-        
-        st.success(f"Document processed successfully! Found {len(text_chunks)} text chunks.")
+with col1:
+    st.markdown("### Document Upload")
+    uploaded_file = st.file_uploader("Upload a PDF file", type=['pdf'])
+    
+    if uploaded_file:
+        if st.session_state.current_document != uploaded_file.name:
+            with st.spinner("Processing document..."):
+                # Process the document
+                chunks_with_metadata = doc_processor.process_pdf(uploaded_file)
+                
+                # Store in vector database
+                vector_store.add_documents(chunks_with_metadata)
+                
+                st.session_state.current_document = uploaded_file.name
+                st.session_state.chat_history = []  # Reset chat history
+                
+                st.success(f"Document processed successfully! Found {len(chunks_with_metadata)} text chunks.")
     
     # Q&A Interface
-    st.subheader("Ask Questions")
-    question = st.text_input("Enter your question about the document:")
+    if st.session_state.current_document:
+        st.markdown(f"### Ask Questions about: {st.session_state.current_document}")
+        
+        # Chat input
+        question = st.text_input("Enter your question:", key="question_input")
+        
+        if st.button("Ask") and question:
+            with st.spinner("Finding answer..."):
+                # Retrieve relevant chunks with metadata
+                relevant_chunks = vector_store.search(question)
+                
+                # Generate answer
+                answer = qa_engine.generate_answer(question, relevant_chunks)
+                
+                # Add to chat history
+                st.session_state.chat_history.append({
+                    'question': question,
+                    'answer': answer,
+                    'sources': relevant_chunks,
+                    'timestamp': time.strftime("%Y-%m-%d %H:%M:%S")
+                })
+        
+        # Display chat history
+        st.markdown("### Conversation History")
+        for i, chat in enumerate(reversed(st.session_state.chat_history)):
+            with st.expander(f"Q: {chat['question']}", expanded=(i==0)):
+                st.markdown(f"**Answer:** {chat['answer']}")
+                st.markdown(f"*Asked at: {chat['timestamp']}*")
+                
+                # Show sources with citations
+                st.markdown("**Sources:**")
+                for j, source in enumerate(chat['sources'], 1):
+                    st.markdown(f"{j}. Page {source['page']} - Relevance: {1/source['score']:.2f}")
+                    st.text(source['text'][:200] + "...")
+
+with col2:
+    st.markdown("### Document Stats")
+    if st.session_state.current_document:
+        st.metric("Current Document", st.session_state.current_document)
+        st.metric("Questions Asked", len(st.session_state.chat_history))
+        
+        # Export chat history
+        if st.button("Export Chat History"):
+            chat_export = {
+                'document': st.session_state.current_document,
+                'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
+                'conversations': st.session_state.chat_history
+            }
+            
+            st.download_button(
+                label="Download Chat History",
+                data=json.dumps(chat_export, indent=2),
+                file_name=f"chat_history_{st.session_state.current_document}_{time.strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json"
+            )
     
-    if question:
-        with st.spinner("Finding answer..."):
-            # Retrieve relevant chunks
-            relevant_chunks = vector_store.search(question)
-            
-            # Generate answer
-            answer = qa_engine.generate_answer(question, relevant_chunks)
-            
-            # Display answer
-            st.markdown("### Answer")
-            st.write(answer)
-            
-            # Show source chunks
-            with st.expander("View source text"):
-                for i, chunk in enumerate(relevant_chunks, 1):
-                    st.markdown(f"**Chunk {i}:**")
-                    st.text(chunk)
-                    st.markdown("---")
+    st.markdown("### Tips")
+    st.info("""
+    - Be specific with your questions
+    - Reference specific topics or sections
+    - Ask follow-up questions for clarity
+    - Check the source citations for context
+    """)

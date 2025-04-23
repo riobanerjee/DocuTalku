@@ -32,19 +32,22 @@ A simple yet powerful document question-answering system that uses Claude AI to 
     pip install -r requirements.txt
 
 4. Set up environment variables:
-# Edit .env and add your Anthropic API key
+Edit .env and add your Anthropic API key
 
 
-Running the Application
+## Running the Application
 
 Start the Streamlit app:
+
     ```bash
     streamlit run app/main.py
+    ```
 
-Open your browser and navigate to http://localhost:8501
+Open browser and navigate to http://localhost:8501
 Upload a PDF document and start asking questions!
 
 Project Structure
+```
 document-qa-system/
 ├── app/                    # Application code
 │   ├── main.py            # Streamlit frontend
@@ -57,14 +60,8 @@ document-qa-system/
 ├── requirements.txt       # Project dependencies
 └── README.md             # This file
 
-Future Enhancements
-
-Add support for multiple document formats (DOCX, TXT)
-Implement document management (save, delete, list)
-Add authentication and user management
-Deploy to cloud platforms (Azure, AWS, GCP)
-Implement caching for better performance
-Add experiment tracking and MLOps features
-
 Contributing
 Feel free to open issues or submit pull requests with improvements.
+
+License
+MIT License

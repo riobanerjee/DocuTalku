@@ -2,24 +2,27 @@
 
 A simple yet powerful document question-answering system that uses Claude AI to answer questions about uploaded PDF documents.
 
+Hosted here: [DocuTalku](https://docutalku-995326108656.europe-west2.run.app)
+
 ## Features
 
 - PDF document upload and processing
-- Text chunking with overlap for better context preservation
+- Text chunking with overlap for context preservation
 - Vector similarity search using FAISS
 - Question answering powered by Claude AI
-- Clean and intuitive Streamlit interface
+- Streamlit interface
+- Hosted using GCP Cloud Run
 
 ## Prerequisites
 
-- Python 3.8+
+- Python 3.10+
 - Anthropic API key
 
 ## Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/document-qa-system.git
+   git clone https://github.com/riobanerjee/nimbus-predict.git
    cd document-qa-system
 
 2. Create a virtual environment:
